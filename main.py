@@ -1,8 +1,8 @@
 import tkinter as tk
-import sqlite3
-
-import tkinter as tk
-
+import sqlite3 as sql
+from tkinter import messagebox
+wordsDb="Words.db"
+wrongDb="WrongWords.db"
 class Application:
     def __init__(self):
         self.root = tk.Tk()
@@ -36,10 +36,38 @@ class Application:
             self.addPage = tk.Toplevel()
             self.addPage.title("Kelime Ekle")
             self.addPage.geometry("900x400")
+        
+            # Türkçe Kelime için Girdi
+            trLabel = tk.Label(self.addPage,font=20, text="Türkçe:")
+            trLabel.pack()
+            self.trEntry = tk.Entry(self.addPage)
+            self.trEntry.pack()
+
+            # İngilizce Kelime için Girdi
+            enLabel = tk.Label(self.addPage,font=20, text="İngilizce:")
+            enLabel.pack()
+            self.enEntry = tk.Entry(self.addPage)
+            self.enEntry.pack()
+
+            # Ekle Butonu
+            addbutton = tk.Button(self.addPage,font=20, text="Ekle", command=lambda: self.addWord(self.trEntry.get(), self.enEntry.get()))
+            addbutton.pack()
+
+            #Ana Menüye Dönüş Butonu
             backpage=tk.Button(self.addPage, text="AnaMenüye Dön", font=20, fg="black", command=self.back_main)
-            backpage.place(x=100,y=150)
+            backpage.pack()
         else:
             self.addPage.deiconify()  # Eğer varsa, alt pencereyi yeniden göster
+    
+    def addWord(self,trWord,enWord):
+        with sql.connect(wordsDb) as db:
+            cursor= db.cursor()
+            query= "INSERT INTO Words (tr,en) VALUES (?,?)"
+            cursor.execute(query,(trWord,enWord))
+            db.commit()
+            self.trEntry.delete(0, tk.END)
+            self.enEntry.delete(0, tk.END)
+            
 
     def learn_words(self):
         self.root.withdraw()  # Ana pencereyi gizle
