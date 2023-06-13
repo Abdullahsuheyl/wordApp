@@ -103,7 +103,6 @@ class Application:
             cursor.execute("SELECT * FROM Words ORDER BY RANDOM() LIMIT 1")
             self.word= cursor.fetchone()
             selectWord= self.word[0]
-
             self.label= tk.Label(self.learnPage,font=30,text=selectWord)
             self.label.place(x=400,y=50)
             self.enReply=tk.Entry(self.learnPage)
@@ -121,13 +120,10 @@ class Application:
             if word is None:
                 self.false +=1
                 self.falseLabel.config(text=self.false)
-                print("Düşmedi")
-                with sql.connect(wrongDb) as db:
-                    cursor=db.cursor()
-                    cursor.execute("CREATE TABLE IF NOT EXISTS WrongWords (tr,en)")
-                    query= "INSERT INTO WrongWords (tr,en) VALUES (?,?)"
-                    cursor.execute(query,(self.word[0], self.word[1]))
-                    db.commit()
+                self.connect()
+                
+                
+                
             else:  
                 reply=word[1]
                 if reply == self.word[1]:
@@ -138,13 +134,8 @@ class Application:
                 else:
                     self.false +=1
                     self.falseLabel.config(text=self.false)
-                    print("Düştü")
-                    with sql.connect(wrongDb) as db:
-                        cursor=db.cursor()
-                        cursor.execute("CREATE TABLE IF NOT EXISTS WrongWords (tr,en)")
-                        query= "INSERT INTO WrongWords (tr,en) VALUES (?,?)"
-                        cursor.execute(query,(self.word[0],self.word[1]))
-                        db.commit()
+                    self.connect()
+                    
                 
             with sql.connect(wordsDb) as db:
                 cursor=db.cursor()
@@ -154,25 +145,83 @@ class Application:
                 
                 self.label.config(text=selectWord) # etiketin metnini güncelle
                 self.enReply.delete(0, tk.END  ) 
+    
+    def control2(self,enWord):
+        with sql.connect(wordsDb) as db:
+            cursor= db.cursor()
+            cursor.execute("SELECT * FROM Words WHERE en=:enWord ",{"enWord":enWord})
+            word= cursor.fetchone()
+            
+            if word is None:
+                self.false +=1
+                self.falseLabel.config(text=self.false)
+            else:  
+                reply=word[1]
+                if reply == self.word[1]:
+                    self.true+=1
+                    self.trueLabel.config(text=self.true)
+                     
+                else:
+                    self.false +=1
+                    self.falseLabel.config(text=self.false)
+                     
 
+            with sql.connect(wrongDb) as db:
+                cursor=db.cursor()
+                cursor.execute("SELECT * FROM WrongWords ORDER BY RANDOM() LIMIT 1")
+                self.word= cursor.fetchone()
+                selectWord= self.word[0]
+                    
+                self.label.config(text=selectWord) # etiketin metnini güncelle
+                self.enReply.delete(0, tk.END)
+
+    def connect(self):
+        with sql.connect(wrongDb) as db:
+                cursor=db.cursor()
+                cursor.execute("CREATE TABLE IF NOT EXISTS WrongWords (tr,en)")
+                query= "INSERT INTO WrongWords (tr,en) VALUES (?,?)"
+                cursor.execute(query,(self.word[0], self.word[1]))
+                db.commit()
+    
     def wrong_words(self):
         self.root.withdraw()  # Ana pencereyi gizle
+        self.true=0
+        self.false=0
         if not self.wrongPage:
             self.wrongPage = tk.Toplevel()
             self.wrongPage.title("Yanlış Kelimelere Çalış")
             self.wrongPage.geometry("900x400")
             backpage=tk.Button(self.wrongPage, text="AnaMenüye Dön", font=20, fg="black", command=self.back_main)
-            backpage.place(x=100,y=150)
+            backpage.place(x=350,y=200)
+            true=tk.Label(self.wrongPage,text="Doğru Sayısı", font=30)
+            true.place(x=300,y=250)
+            false=tk.Label(self.wrongPage,text="Yanlış Sayısı", font=30)
+            false.place(x=430,y=250)
+            self.trueLabel= tk.Label(self.wrongPage,text=self.true,font=40)
+            self.trueLabel.place(x=350,y=280)
+            self.falseLabel= tk.Label(self.wrongPage,text=self.false,font=20)
+            self.falseLabel.place(x=480,y=280)
         else:
             self.wrongPage.deiconify()  # Eğer varsa, alt pencereyi yeniden göster
+        
+        with sql.connect(wrongDb) as db:
+            cursor= db.cursor()
+            cursor.execute("SELECT * FROM WrongWords ORDER BY RANDOM() LIMIT 1")
+            self.word= cursor.fetchone()
+            selectWord= self.word[0]
+            self.label= tk.Label(self.wrongPage,font=30,text=selectWord)
+            self.label.place(x=400,y=50)
+            self.enReply=tk.Entry(self.wrongPage)
+            self.enReply.place(x=370,y=90)
+            self.replyButton=tk.Button(self.wrongPage,font=20,text="Cevapla",command=lambda: self.control2(self.enReply.get()))
+            self.replyButton.place(x=390,y=130)
 
     def delete_wrong_words(self):
         with sql.connect(wrongDb) as db:
             cursor=db.cursor()
             cursor.execute("DELETE FROM WrongWords")
             db.commit()
-            
-       
+               
     def back_main(self):
     # Alt pencerelerin var olup olmadığını kontrol et
         if self.addPage:
