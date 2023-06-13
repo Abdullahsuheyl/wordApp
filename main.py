@@ -167,16 +167,12 @@ class Application:
             self.wrongPage.deiconify()  # Eğer varsa, alt pencereyi yeniden göster
 
     def delete_wrong_words(self):
-        self.root.withdraw()  # Ana pencereyi gizle
-        if not self.deletePage:
-            self.deletePage = tk.Toplevel()
-            self.deletePage.title("Yanlış Kelimeleri Sil")
-            self.deletePage.geometry("900x400")
-            backpage=tk.Button(self.deletePage, text="AnaMenüye Dön", font=20, fg="black", command=self.back_main)
-            backpage.place(x=100,y=150)
-        else:
-            self.deletePage.deiconify()  
-
+        with sql.connect(wrongDb) as db:
+            cursor=db.cursor()
+            cursor.execute("DELETE FROM WrongWords")
+            db.commit()
+            
+       
     def back_main(self):
     # Alt pencerelerin var olup olmadığını kontrol et
         if self.addPage:
